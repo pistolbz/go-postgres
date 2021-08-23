@@ -44,7 +44,7 @@ func createConnection() *sql.DB {
 		panic(err)
 	}
 
-	fmt.Println("[+] Successfully connected!")
+	fmt.Println("[*] Successfully connected!")
 	// return the connection
 	return db
 }
@@ -93,14 +93,14 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(params["id"])
 
 	if err != nil {
-		log.Fatalf("[-] Unable to convert the string into int. %v", err)
+		log.Fatalf("[-] Unable to convert the string into int. %v\n", err)
 	}
 
 	// call the getUser function with user id to retrieve a single user
 	user, err := getUser(int64(id))
 
 	if err != nil {
-		log.Fatalf("[-] Unable to get user. %v", err)
+		log.Fatalf("[-] Unable to get user. %v\n", err)
 	}
 
 	// send the response
@@ -115,7 +115,7 @@ func GetAllUser(w http.ResponseWriter, r *http.Request) {
 	users, err := getAllUsers()
 
 	if err != nil {
-		log.Fatalf("[-] Unable to get all users. %v", err)
+		log.Fatalf("[-] Unable to get all users. %v\n", err)
 	}
 
 	// send the response
@@ -136,14 +136,14 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(params["id"])
 
 	if err != nil {
-		log.Fatalf("[-] Unable to convert the string into int. %v", err)
+		log.Fatalf("[-] Unable to convert the string into int. %v\n", err)
 	}
 
 	var user models.User
 	err = json.NewDecoder(r.Body).Decode(&user)
 
 	if err != nil {
-		log.Fatalf("[-] Unable to decode the request body. %v", err)
+		log.Fatalf("[-] Unable to decode the request body. %v\n", err)
 	}
 
 	// call update user to update the user
@@ -176,7 +176,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(params["id"])
 
 	if err != nil {
-		log.Fatalf("[-] Unable to convert the string into int. %v", err)
+		log.Fatalf("[-] Unable to convert the string into int. %v\n", err)
 	}
 
 	// call the deleteUser, convert the int to int64
@@ -219,7 +219,7 @@ func insertUser(user models.User) int64 {
 		log.Fatalf("Unable to execute the query. %v\n", err)
 	}
 
-	fmt.Printf("[+] Inserted a single record %v", id)
+	fmt.Printf("[+] Inserted a single record %v\n", id)
 
 	// return the inserted id
 	return id
@@ -247,12 +247,12 @@ func getUser(id int64) (models.User, error) {
 
 	switch err {
 	case sql.ErrNoRows:
-		fmt.Println("[-]No rows were returned!")
+		fmt.Println("[-] No rows were returned!")
 		return user, nil
 	case nil:
 		return user, nil
 	default:
-		log.Fatalf("[-] Unable to scan the row. %v", err)
+		log.Fatalf("[-] Unable to scan the row. %v\n", err)
 	}
 
 	// return empty user on error
@@ -276,7 +276,7 @@ func getAllUsers() ([]models.User, error) {
 	rows, err := db.Query(sqlStatement)
 
 	if err != nil {
-		log.Fatalf("[-] Unable to execute the query. %v", err)
+		log.Fatalf("[-] Unable to execute the query. %v\n", err)
 	}
 
 	// close the statement
@@ -290,7 +290,7 @@ func getAllUsers() ([]models.User, error) {
 		err = rows.Scan(&user.ID, &user.Name, &user.Age, &user.Location)
 
 		if err != nil {
-			log.Fatalf("[-] Unable to scan the row. %v", err)
+			log.Fatalf("[-] Unable to scan the row. %v\n", err)
 		}
 
 		// append the user in the users slice
@@ -309,6 +309,22 @@ func updateUser(id int64, user models.User) int64 {
 	// close db connection
 	defer db.Close()
 
+	// check empty params
+	old_user, err := getUser(id)
+
+	if err != nil {
+		log.Fatalf("[-] Unable to get user. %v\n", err)
+	}
+	if user.Name == "" {
+		user.Name = old_user.Name
+	}
+	if user.Age == 0 {
+		user.Age = old_user.Age
+	}
+	if user.Location == "" {
+		user.Location = old_user.Location
+	}
+
 	// create sql statement
 	sqlStatement := `UPDATE users SET name=$2, location=$3, age=$4 WHERE userid=$1`
 
@@ -316,17 +332,17 @@ func updateUser(id int64, user models.User) int64 {
 	res, err := db.Exec(sqlStatement, id, user.Name, user.Location, user.Age)
 
 	if err != nil {
-		log.Fatalf("[-] Unable to execute the query. %v", err)
+		log.Fatalf("[-] Unable to execute the query. %v\n", err)
 	}
 
 	// check how many rows affected
 	rowsAffected, err := res.RowsAffected()
 
 	if err != nil {
-		log.Fatalf("[-] Error while checking the affected rows. %v", err)
+		log.Fatalf("[-] Error while checking the affected rows. %v\n", err)
 	}
 
-	fmt.Printf("[+] Total rows/record affected %v", rowsAffected)
+	fmt.Printf("[+] Total rows/record affected %v\n", rowsAffected)
 
 	return rowsAffected
 }
@@ -346,16 +362,16 @@ func deleteUser(id int64) int64 {
 	res, err := db.Exec(sqlStatement, id)
 
 	if err != nil {
-		log.Fatalf("[-] Unable to execute the query. %v", err)
+		log.Fatalf("[-] Unable to execute the query. %v\n", err)
 	}
 
 	// check how many rows affected
 	rowsAffected, err := res.RowsAffected()
 
 	if err != nil {
-		log.Fatalf("[-] Error while checking the affected rows. %v", err)
+		log.Fatalf("[-] Error while checking the affected rows. %v\n", err)
 	}
-	fmt.Printf("[+] Total rows/record affected %v", rowsAffected)
+	fmt.Printf("[+] Total rows/record affected %v\n", rowsAffected)
 
 	return rowsAffected
 }
